@@ -26,6 +26,7 @@
             maturin
             rustToolchain
             ruff
+            typos
             mypy
             dprint
             
