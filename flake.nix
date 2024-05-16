@@ -65,7 +65,7 @@
           pyxlsb
           xlsx2csv
           XlsxWriter
-          (localPyPkg ./python-packages/deltalake.nix)
+          (localPyPkg ./python-packages/deltalake/default.nix)
 
           zstandard
           hvplot
