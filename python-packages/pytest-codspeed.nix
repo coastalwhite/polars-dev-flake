@@ -1,19 +1,24 @@
-{ buildPythonPackage, fetchPypi, python-pkgs, ... }:
+{ buildPythonPackage, pkgs, python-pkgs, ... }:
 buildPythonPackage rec {
-	pname = "pytest_codspeed";
-	format = "pyproject";
+	pname = "pytest-codspeed";
 	version = "2.2.1";
+	format = "pyproject";
 
-	propagatedBuildInputs = with python-pkgs; [
+	# disabled = pythonVersion < 3.7
+
+	dependencies = with python-pkgs; [
+		pytest
 		cffi
 		filelock
-		pytest
 		hatchling
 	];
 
-	doCheck = false;
-	src = fetchPypi {
-		inherit pname version;
-		sha256 = "sha256-CtwkuvAcZKbKCguDs81wQ1FwiZfgnsCGt3dsMiJ9Tgo=";
+	src = pkgs.fetchFromGitHub {
+		owner = "CodSpeedHQ";
+		repo = "pytest-codspeed";
+		rev = "v${version}";
+		hash = "sha256-8C+Nxp831qZAWTOPwWXfnXQs0lMesu2QPPhJZsmTEl4=";
 	};
+
+	pythonImportsCheck = [ "pytest_codspeed" ];
 }
