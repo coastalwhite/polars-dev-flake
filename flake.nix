@@ -169,7 +169,6 @@
             export PYTHONPATH="$PYTHONPATH:$POLARS_ROOT/py-polars"
 
             echo
-            echo ${builtins.toString (maxLength)}
             echo 'Defined Aliases:'
             ${concatStrings (mapAttrsToList (name: value: ''
               echo ' - pl-${name}:${nSpaces (maxLength - (builtins.stringLength name))} ${value.doc}'
