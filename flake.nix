@@ -144,6 +144,8 @@
             dprint
 
             zlib
+
+						cargo-nextest
             
             python
             fix-python.packages.${system}.default
