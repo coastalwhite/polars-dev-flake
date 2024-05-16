@@ -22,9 +22,8 @@
 
         python = (pkgs.python3.withPackages ( python-pkgs: let
           localPyPkg = file: import file {
+						inherit pkgs python-pkgs ;
             python = pkgs.python3;
-            python-pkgs = python-pkgs;
-            pkgs = pkgs;
             buildPythonPackage = python-pkgs.buildPythonPackage;
             fetchPypi = python-pkgs.fetchPypi;
           };
