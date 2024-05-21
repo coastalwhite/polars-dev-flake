@@ -3,10 +3,19 @@
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs";
-    utils.url = "github:numtide/flake-utils";
+    utils = {
+      url = "github:numtide/flake-utils";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
 
     fix-python.url = "github:GuillaumeDesforges/fix-python";
-    rust-overlay.url = "github:oxalica/rust-overlay";
+    rust-overlay = {
+      url = "github:oxalica/rust-overlay";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        flake-utils.follows = "utils";
+      };
+    };
   };
 
   outputs = { self, nixpkgs, utils, fix-python, rust-overlay }:
@@ -18,7 +27,10 @@
         };
         lib = pkgs.lib;
 
-        rustToolchain = pkgs.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml;
+        polarsRoot = "$HOME/Projects/polars";
+        rustToolchain = (pkgs.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml).override {
+          extensions = [ "rust-analyzer" ];
+        };
 
         python = (pkgs.python3.withPackages ( python-pkgs: let
           localPyPkg = file: import file {
@@ -72,9 +84,21 @@
           matplotlib
           gevent
           nest-asyncio
+
+          pandas-stubs
+          boto3-stubs
         ]));
       in {
         devShells.default = let
+          aliasToScript = alias: let
+            pwd = if alias ? pwd then "${polarsRoot}/${alias.pwd}" else polarsRoot;
+          in ''
+            set -e
+            pushd ${pwd} > /dev/null
+            echo "[INFO]: Changed directory to ${pwd}"
+            ${alias.cmd}
+            popd > /dev/null
+          '';
           aliases = rec {
             check = {
               cmd = "cargo check --workspace --all-targets --all-features";
@@ -93,18 +117,22 @@
               doc = "Run autoformatting";
             };
             pybuild = {
+              pwd = "py-polars";
               cmd = "maturin develop -m $POLARS_ROOT/py-polars/Cargo.toml";
               doc = "Build the python library";
             };
             pytest-all = {
+              pwd = "py-polars";
               cmd = "pytest -n auto --dist loadgroup \"$@\"";
               doc = "Run the default python tests";
             };
             pytest = {
+              pwd = "py-polars";
               cmd = "pytest \"$@\"";
               doc = "Run the default python tests";
             };
             pyfmt = {
+              pwd = "py-polars";
               cmd = ''
                 ruff check
                 ruff format
@@ -113,22 +141,80 @@
               '';
               doc = "Run python autoformatting";
             };
+            rstest = {
+              pwd = "crates";
+              cmd = ''
+                cargo test --all-features \
+                  -p polars-compute       \
+                  -p polars-core          \
+                  -p polars-io            \
+                  -p polars-lazy          \
+                  -p polars-ops           \
+                  -p polars-plan          \
+                  -p polars-row           \
+                  -p polars-sql           \
+                  -p polars-time          \
+                  -p polars-utils         \
+                  --                      \
+                  --test-threads=2        \
+              '';
+              doc = "Run the Rust tests";
+            };
+            rsnextest = {
+              pwd = "crates";
+              cmd = ''
+                cargo nextest run --all-features \
+                  -p polars-compute              \
+                  -p polars-core                 \
+                  -p polars-io                   \
+                  -p polars-lazy                 \
+                  -p polars-ops                  \
+                  -p polars-plan                 \
+                  -p polars-row                  \
+                  -p polars-sql                  \
+                  -p polars-time                 \
+                  -p polars-utils                \
+              '';
+              doc = "Run the Rust tests with Cargo-Nextest";
+            };
             precommit = {
               cmd = ''
-                set -e
-                echo '[Format]'
-                ${fmt.cmd}
-                echo 'Format Done ✅'
+                echo '[Rust Format]'
+                ${aliasToScript fmt}
+                echo 'Rust Format Done ✅'
+                echo
+                echo '[Python Format]'
+                ${aliasToScript pyfmt}
+                echo 'Python Format Done ✅'
                 echo
                 echo '[Clippy All]:'
-                ${clippy-all.cmd}
+                ${aliasToScript clippy-all}
                 echo 'Clippy All Done ✅'
                 echo
                 echo '[Clippy Default]:'
-                ${clippy-default.cmd}
+                ${aliasToScript clippy-default}
                 echo 'Clippy Default Done ✅'
               '';
               doc = "Run the checks to do before committing";
+            };
+            prepush = {
+              cmd = ''
+                ${aliasToScript precommit}
+                echo
+                echo '[Rust Tests]'
+                ${aliasToScript rstest}
+                echo 'Rust Tests Done ✅'
+                echo
+                echo '[Python Build]'
+                ${aliasToScript pybuild}
+                echo 'Python Build Done ✅'
+                echo
+                echo '[Python Tests]'
+                ${aliasToScript pytest-all}
+                echo 'Python Tests Done ✅'
+                echo
+              '';
+              doc = "Run the checks to do before pushing";
             };
           };
 
@@ -149,7 +235,7 @@
             python
             fix-python.packages.${system}.default
           ] ++ (
-            mapAttrsToList (name: value: pkgs.writeShellScriptBin "pl-${name}" value.cmd) aliases
+            mapAttrsToList (name: value: pkgs.writeShellScriptBin "pl-${name}" (aliasToScript value)) aliases
           );
 
           shellHook = let
@@ -165,8 +251,9 @@
             nSpaces = n: (lib.concatMapStrings (_: " ") (lib.range 1 n));
           in ''
             echo 'Welcome in your Polars Development Environment :)' | ${pkgs.lolcat}/bin/lolcat
-            export POLARS_ROOT="$HOME/Projects/polars"
+            export POLARS_ROOT="${polarsRoot}"
             export PYTHONPATH="$PYTHONPATH:$POLARS_ROOT/py-polars"
+            export CARGO_BUILD_JOBS=8
 
             echo
             echo 'Defined Aliases:'
@@ -174,6 +261,13 @@
               echo ' - pl-${name}:${nSpaces (maxLength - (builtins.stringLength name))} ${value.doc}'
             '') aliases)}
           '';
+        };
+        devShells.polars-py = pkgs.mkShell {
+          nativeBuildInputs = with pkgs; [
+            (python3.withPackages (python-pkgs: with python-pkgs; [
+              polars
+            ]))
+          ];
         };
       }
     );
