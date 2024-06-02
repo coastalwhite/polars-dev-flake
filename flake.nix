@@ -29,7 +29,7 @@
 
         polarsRoot = "$HOME/Projects/polars";
         rustToolchain = (pkgs.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml).override {
-          extensions = [ "rust-analyzer" ];
+          extensions = [ "rust-analyzer" "rust-src" ];
         };
 
         python = (pkgs.python3.withPackages ( python-pkgs: let
@@ -251,6 +251,7 @@
             nSpaces = n: (lib.concatMapStrings (_: " ") (lib.range 1 n));
           in ''
             echo 'Welcome in your Polars Development Environment :)' | ${pkgs.lolcat}/bin/lolcat
+            export RUST_SRC_BIN="${rustToolchain}/lib/rustlib/src/rust/library";
             export POLARS_ROOT="${polarsRoot}"
             export PYTHONPATH="$PYTHONPATH:$POLARS_ROOT/py-polars"
             export CARGO_BUILD_JOBS=8
