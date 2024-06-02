@@ -87,6 +87,7 @@
 
           pandas-stubs
           boto3-stubs
+          duckdb
         ]));
       in {
         devShells.default = let
