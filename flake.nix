@@ -236,6 +236,9 @@
           mapAttrsToList = lib.attrsets.mapAttrsToList;
         in pkgs.mkShell {
           nativeBuildInputs = with pkgs; [
+            cmake
+            gnumake
+
             maturin
             rustToolchain
             ruff
