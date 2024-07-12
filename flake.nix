@@ -34,7 +34,7 @@
 
         python = (pkgs.python3.withPackages ( python-pkgs: let
           localPyPkg = file: import file {
-						inherit pkgs python-pkgs ;
+            inherit pkgs python-pkgs ;
             python = pkgs.python3;
             buildPythonPackage = python-pkgs.buildPythonPackage;
             fetchPypi = python-pkgs.fetchPypi;
@@ -88,6 +88,18 @@
           pandas-stubs
           boto3-stubs
           duckdb
+
+          sphinx
+          numpydoc
+          pydata-sphinx-theme
+          sphinx-copybutton
+          sphinx-design
+          # (localPyPkg ./python-packages/sphinx-favicon.nix)
+          # (localPyPkg ./python-packages/sphinx-reredirects.nix)
+          # (localPyPkg ./python-packages/sphinx-toolbox.nix)
+          (localPyPkg ./python-packages/autodocsumm.nix)
+          (localPyPkg ./python-packages/sphinx-autosummary-accessors.nix)
+          livereload
         ]));
       in {
         devShells.default = let
@@ -100,10 +112,20 @@
             ${alias.cmd}
             popd > /dev/null
           '';
+          step = title: alias: ''
+            echo '[${title}]'
+            ${aliasToScript alias}
+            echo '${title} Done ✅'
+            echo
+          '';
           aliases = rec {
             check = {
               cmd = "cargo check --workspace --all-targets --all-features";
               doc = "Run cargo check with all features";
+            };
+            typos = {
+              cmd = "typos";
+              doc = "Run a Spell Check with Typos";
             };
             clippy-all = {
               cmd = "cargo clippy --workspace --all-targets --all-features --locked -- -D warnings -D clippy::dbg_macro";
@@ -121,6 +143,11 @@
               pwd = "py-polars";
               cmd = "maturin develop -m $POLARS_ROOT/py-polars/Cargo.toml";
               doc = "Build the python library";
+            };
+            pybuild-release = {
+              pwd = "py-polars";
+              cmd = "maturin develop --release -- -C codegen-units=8 -C lto=thin -C target-cpu=native";
+              doc = "Build the python library in release mode";
             };
             pytest-all = {
               pwd = "py-polars";
@@ -180,42 +207,29 @@
             };
             precommit = {
               cmd = ''
-                echo '[Rust Format]'
-                ${aliasToScript fmt}
-                echo 'Rust Format Done ✅'
-                echo
-                echo '[Python Format]'
-                ${aliasToScript pyfmt}
-                echo 'Python Format Done ✅'
-                echo
-                echo '[Clippy All]:'
-                ${aliasToScript clippy-all}
-                echo 'Clippy All Done ✅'
-                echo
-                echo '[Clippy Default]:'
-                ${aliasToScript clippy-default}
-                echo 'Clippy Default Done ✅'
+                ${step "Rust Format" fmt}
+                ${step "Python Format" pyfmt}
+                ${step "Spell Check" typos}
+                ${step "Clippy All" clippy-all}
+                ${step "Clippy Default" clippy-default}
               '';
               doc = "Run the checks to do before committing";
             };
             prepush = {
               cmd = ''
                 ${aliasToScript precommit}
-                echo
-                echo '[Rust Tests]'
-                ${aliasToScript rstest}
-                echo 'Rust Tests Done ✅'
-                echo
-                echo '[Python Build]'
-                ${aliasToScript pybuild}
-                echo 'Python Build Done ✅'
-                echo
-                echo '[Python Tests]'
-                ${aliasToScript pytest-all}
-                echo 'Python Tests Done ✅'
-                echo
+                ${step "Rust Tests" rstest}
+                ${step "Python Build" pybuild}
+                ${step "Python Tests" pytest-all}
               '';
               doc = "Run the checks to do before pushing";
+            };
+            profile-setup = {
+              cmd = ''
+                echo '1'    | sudo tee /proc/sys/kernel/perf_event_paranoid
+                echo '1024' | sudo tee /proc/sys/kernel/perf_event_mlock_kb
+              '';
+              doc = "Setup the environment for profiling";
             };
           };
 
@@ -231,7 +245,10 @@
 
             zlib
 
-						cargo-nextest
+            cargo-nextest
+
+            samply
+            hyperfine
             
             python
             fix-python.packages.${system}.default
