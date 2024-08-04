@@ -139,14 +139,34 @@
               cmd = "cargo fmt --all";
               doc = "Run autoformatting";
             };
+            pyselect = {
+              pwd = "py-polars";
+              cmd = ''
+								if [ -z "$1" ]; then
+									echo "Usage $0 <debug/debug-release>"
+                  exit 2
+								fi
+
+                ln -sf "$POLARS_ROOT/py-polars/polars/polars.abi3.so.$1.latest" polars/polars.abi3.so
+              '';
+              doc = "Build the python library";
+            };
             pybuild = {
               pwd = "py-polars";
-              cmd = "maturin develop -m $POLARS_ROOT/py-polars/Cargo.toml";
+              cmd = ''
+                maturin develop -m $POLARS_ROOT/py-polars/Cargo.toml
+                mv polars/polars.abi3.so polars/polars.abi3.so.debug.latest
+                ln -sf $POLARS_ROOT/py-polars/polars/polars.abi3.so.debug.latest polars/polars.abi3.so
+              '';
               doc = "Build the python library";
             };
             pybuild-release = {
               pwd = "py-polars";
-              cmd = "maturin develop --release -- -C codegen-units=8 -C lto=thin -C target-cpu=native";
+              cmd = ''
+                maturin develop --profile debug-release -- -Ctarget-cpu=native
+                mv polars/polars.abi3.so polars/polars.abi3.so.debug-release.latest
+                ln -sf $POLARS_ROOT/py-polars/polars/polars.abi3.so.debug-release.latest polars/polars.abi3.so
+              '';
               doc = "Build the python library in release mode";
             };
             pytest-all = {
