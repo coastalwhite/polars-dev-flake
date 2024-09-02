@@ -60,6 +60,7 @@
 
           # backports-zoneinfo
           tzdata
+          psutil
 
           sqlalchemy
           (localPyPkg ./python-packages/adbc-driver-manager.nix)
@@ -81,6 +82,7 @@
 
           zstandard
           hvplot
+          seaborn
           matplotlib
           gevent
           nest-asyncio
@@ -111,6 +113,13 @@
             echo "[INFO]: Changed directory to ${pwd}"
             ${alias.cmd}
             popd > /dev/null
+          '';
+          buildPy = alias: cmd: let 
+            targetDir = "$POLARS_ROOT/py-polars/polars";
+          in ''
+            ${cmd}
+            mv "${targetDir}/polars.abi3.so" "${targetDir}/polars.abi3.so.${alias}"
+            ln -sf "${targetDir}/polars.abi3.so.${alias}" "${targetDir}/polars.abi3.so"
           '';
           step = title: alias: ''
             echo '[${title}]'
@@ -153,21 +162,26 @@
             };
             pybuild = {
               pwd = "py-polars";
-              cmd = ''
-                maturin develop -m $POLARS_ROOT/py-polars/Cargo.toml
-                mv polars/polars.abi3.so polars/polars.abi3.so.debug.latest
-                ln -sf $POLARS_ROOT/py-polars/polars/polars.abi3.so.debug.latest polars/polars.abi3.so
-              '';
+              cmd = buildPy "debug" "maturin develop -m $POLARS_ROOT/py-polars/Cargo.toml";
               doc = "Build the python library";
             };
             pybuild-release = {
               pwd = "py-polars";
-              cmd = ''
-                maturin develop --profile debug-release -- -Ctarget-cpu=native
-                mv polars/polars.abi3.so polars/polars.abi3.so.debug-release.latest
-                ln -sf $POLARS_ROOT/py-polars/polars/polars.abi3.so.debug-release.latest polars/polars.abi3.so
-              '';
+              cmd = buildPy "debug-release" "maturin develop --profile debug-release -- -Ctarget-cpu=native";
               doc = "Build the python library in release mode";
+            };
+            pyselect-build = {
+              pwd = "py-polars";
+              cmd = ''
+                if [ -z "$1" ]; then
+                    echo "Usage: $0 <BUILD>" > 2
+                    exit 2
+                fi
+
+                TARGET_DIR="$POLARS_ROOT/py-polars/polars"
+                ln -sf "$TARGET_DIR/polars.abi3.so.$1" "$TARGET_DIR/polars.abi3.so"
+              '';
+              doc = "Select a previous build of polars";
             };
             pytest-all = {
               pwd = "py-polars";
