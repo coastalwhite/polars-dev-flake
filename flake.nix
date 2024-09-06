@@ -81,6 +81,7 @@
           (localPyPkg ./python-packages/deltalake/default.nix)
 
           zstandard
+          altair
           hvplot
           seaborn
           matplotlib
