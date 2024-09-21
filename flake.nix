@@ -2,6 +2,7 @@
   description = "A basic Nix Flake for eachDefaultSystem";
 
   inputs = {
+		nixpkgs-unstable.url = "github:nixos/nixpkgs/nixos-unstable";
     nixpkgs.url = "github:nixos/nixpkgs";
     utils = {
       url = "github:numtide/flake-utils";
@@ -18,21 +19,22 @@
     };
   };
 
-  outputs = { self, nixpkgs, utils, fix-python, rust-overlay }:
+  outputs = { self, nixpkgs-unstable, nixpkgs, utils, fix-python, rust-overlay }:
     utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs {
           inherit system;
           overlays = [ rust-overlay.overlays.default ];
         };
+        pkgs-unstable = import nixpkgs-unstable { inherit system; };
         lib = pkgs.lib;
 
         polarsRoot = "$HOME/Projects/polars";
         rustToolchain = (pkgs.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml).override {
-          extensions = [ "rust-analyzer" "rust-src" ];
+          extensions = [ "rust-analyzer" "rust-src" "miri" ];
         };
 
-        python = (pkgs.python3.withPackages ( python-pkgs: let
+        python = (pkgs.python311.withPackages ( python-pkgs: let
           localPyPkg = file: import file {
             inherit pkgs python-pkgs ;
             python = pkgs.python3;
@@ -91,6 +93,18 @@
           pandas-stubs
           boto3-stubs
           duckdb
+
+					pygithub
+          mkdocs-material
+          mkdocs-material-extensions
+          mkdocs-redirects
+          mkdocs-macros
+          (localPyPkg ./python-packages/markdown-exec.nix)
+          (localPyPkg ./python-packages/material-plausible.nix)
+          (localPyPkg ./python-packages/great-tables.nix)
+					numba
+					plotly
+          altair
 
           sphinx
           numpydoc
@@ -276,7 +290,7 @@
 
             maturin
             rustToolchain
-            ruff
+            pkgs-unstable.ruff
             typos
             mypy
             dprint
