@@ -177,13 +177,33 @@
             };
             pybuild = {
               pwd = "py-polars";
-              cmd = buildPy "debug" "maturin develop -m $POLARS_ROOT/py-polars/Cargo.toml";
+              cmd = buildPy "debug" "maturin develop -m $POLARS_ROOT/py-polars/Cargo.toml \"$@\"";
               doc = "Build the python library";
+            };
+            pybuild-mindebug = {
+              pwd = "py-polars";
+              cmd = buildPy "mindebug" "maturin develop -m $POLARS_ROOT/py-polars/Cargo.toml \"$@\" -- -Cdebuginfo=line-directives-only";
+              doc = "Build the python library with minimal debug information";
+            };
+            pybuild-nodebug-release = {
+              pwd = "py-polars";
+              cmd = buildPy "nodebug-release" "maturin develop --profile nodebug-release \"$@\"";
+              doc = "Build the python library in release mode without debug symbols";
             };
             pybuild-release = {
               pwd = "py-polars";
-              cmd = buildPy "debug-release" "maturin develop --profile debug-release -- -Ctarget-cpu=native";
-              doc = "Build the python library in release mode";
+              cmd = buildPy "release" "maturin develop --profile release \"$@\"";
+              doc = "Build the python library in release mode with minimal debug symbols";
+            };
+            pybuild-debug-release = {
+              pwd = "py-polars";
+              cmd = buildPy "debug-release" "maturin develop --profile debug-release \"$@\"";
+              doc = "Build the python library in release mode with full debug symbols";
+            };
+            pybuild-dist-release = {
+              pwd = "py-polars";
+              cmd = buildPy "dist-release" "maturin develop --profile dist-release \"$@\"";
+              doc = "Build the python library in release mode which would be distributed to users";
             };
             pyselect-build = {
               pwd = "py-polars";
@@ -321,10 +341,11 @@
             nSpaces = n: (lib.concatMapStrings (_: " ") (lib.range 1 n));
           in ''
             echo 'Welcome in your Polars Development Environment :)' | ${pkgs.lolcat}/bin/lolcat
+
             export RUST_SRC_BIN="${rustToolchain}/lib/rustlib/src/rust/library";
             export POLARS_ROOT="${polarsRoot}"
             export PYTHONPATH="$PYTHONPATH:$POLARS_ROOT/py-polars"
-            export CARGO_BUILD_JOBS=8
+            export CARGO_BUILD_JOBS=12
 
             echo
             echo 'Defined Aliases:'
