@@ -220,8 +220,13 @@
             };
             pytest-all = {
               pwd = "py-polars";
-              cmd = "pytest -n auto --dist loadgroup \"$@\"";
+              cmd = "pytest -n auto --dist=loadgroup \"$@\"";
               doc = "Run the default python tests";
+            };
+            pytest-release = {
+              pwd = "py-polars";
+              cmd = "pytest -n auto --dist=loadgroup -m 'not release and not benchmark and not docs' \"$@\"";
+              doc = "Run the release python tests";
             };
             pytest = {
               pwd = "py-polars";
@@ -288,7 +293,7 @@
               cmd = ''
                 ${aliasToScript precommit}
                 ${step "Rust Tests" rstest}
-                ${step "Python Build" pybuild}
+                ${step "Python Build" pybuild-mindebug}
                 ${step "Python Tests" pytest-all}
               '';
               doc = "Run the checks to do before pushing";
