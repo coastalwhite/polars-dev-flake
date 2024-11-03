@@ -83,7 +83,7 @@
           (localPyPkg ./python-packages/deltalake/default.nix)
 
           zstandard
-          altair
+          (localPyPkg ./python-packages/altair.nix)
           hvplot
           seaborn
           matplotlib
@@ -104,7 +104,9 @@
           (localPyPkg ./python-packages/great-tables.nix)
 					numba
 					plotly
-          altair
+
+          jsonschema
+          (localPyPkg ./python-packages/narwhals.nix)
 
           sphinx
           numpydoc
@@ -182,7 +184,7 @@
             };
             pybuild-mindebug = {
               pwd = "py-polars";
-              cmd = buildPy "mindebug" "maturin develop -m $POLARS_ROOT/py-polars/Cargo.toml \"$@\" -- -Cdebuginfo=line-directives-only";
+              cmd = buildPy "mindebug" "maturin develop --profile mindebug-dev \"$@\"";
               doc = "Build the python library with minimal debug information";
             };
             pybuild-nodebug-release = {
