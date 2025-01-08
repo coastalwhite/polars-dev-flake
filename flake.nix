@@ -9,7 +9,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    fix-python.url = "github:GuillaumeDesforges/fix-python";
     rust-overlay = {
       url = "github:oxalica/rust-overlay";
       inputs = {
@@ -17,9 +16,13 @@
         flake-utils.follows = "utils";
       };
     };
+    polars = {
+      url = "github:pola-rs/polars";
+      flake = false;
+    };
   };
 
-  outputs = { self, nixpkgs-unstable, nixpkgs, utils, fix-python, rust-overlay }:
+  outputs = { self, nixpkgs-unstable, nixpkgs, utils, rust-overlay, polars, ... }:
     utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs {
@@ -30,7 +33,7 @@
         lib = pkgs.lib;
 
         polarsRoot = "$HOME/Projects/polars";
-        rustToolchain = (pkgs.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml).override {
+        rustToolchain = (pkgs.rust-bin.fromRustupToolchainFile "${polars}/rust-toolchain.toml").override {
           extensions = [ "rust-analyzer" "rust-src" "miri" ];
         };
 
@@ -40,86 +43,198 @@
             python = pkgs.python3;
             buildPythonPackage = python-pkgs.buildPythonPackage;
             fetchPypi = python-pkgs.fetchPypi;
+            localPyPkg = localPyPkg;
           };
-        in with python-pkgs; [
-          pydantic
-          hypothesis
-          pytest
-          (localPyPkg ./python-packages/pytest-codspeed.nix)
-          pytest-cov
-          pytest-xdist
+          requirements = with python-pkgs; {
+            dev = [
+              # === DEPENDENCIES ===
+              # Interop
+              numpy
+              numba # >= 0.54; python_version < '3.13'
+              pandas
+              pyarrow
+              pydantic # >=2.0.0
+              numba
 
-          flask
-          flask-cors
+              # Datetime / Time zones
+              # backports.zoneinfo # python_version < '3.9'
+              tzdata             # platform_system == 'Windows'
 
-          moto
-          boto3
-          importlib-resources
+              # Database
+              sqlalchemy
+              (localPyPkg ./python-packages/adbc-driver-manager.nix) # python_version >= '3.9' and platform_system != 'Windows'
+              (localPyPkg ./python-packages/adbc-driver-sqlite.nix)  # python_version >= '3.9' and platform_system != 'Windows'
+              aiosqlite
+              (localPyPkg ./python-packages/connectorx.nix)
+              (localPyPkg ./python-packages/kuzu.nix)
+              nest-asyncio
 
-          numpy
-          pandas
-          pyarrow
+              # Cloud
+              cloudpickle
+              fsspec
+              s3fs # [boto3]
 
-          # backports-zoneinfo
-          tzdata
-          psutil
+              # Spreadsheet
+              (localPyPkg ./python-packages/fastexcel) # >= 0.11.5
+              openpyxl
+              xlsx2csv
+              xlsxwriter
 
-          sqlalchemy
-          (localPyPkg ./python-packages/adbc-driver-manager.nix)
-          (localPyPkg ./python-packages/adbc-driver-sqlite.nix)
-          aiosqlite
-          (localPyPkg ./python-packages/connectorx.nix)
-          (localPyPkg ./python-packages/kuzu.nix)
+              # Other IO
+              deltalake # >= 0.15.0
 
-          cloudpickle
-          fsspec
-          s3fs
-          
-          lxml
-          openpyxl
-          pyxlsb
-          xlsx2csv
-          XlsxWriter
-          (localPyPkg ./python-packages/deltalake/default.nix)
+              # CSV
+              zstandard
 
-          zstandard
-          (localPyPkg ./python-packages/altair.nix)
-          hvplot
-          seaborn
-          matplotlib
-          gevent
-          nest-asyncio
+              # Plotting
+              altair #>= 5.4.0
 
-          pandas-stubs
-          boto3-stubs
-          duckdb
+              # Styling
+              great-tables #>=0.8.0; python_version >= '3.9'
 
-					pygithub
-          mkdocs-material
-          mkdocs-material-extensions
-          mkdocs-redirects
-          mkdocs-macros
-          (localPyPkg ./python-packages/markdown-exec.nix)
-          (localPyPkg ./python-packages/material-plausible.nix)
-          (localPyPkg ./python-packages/great-tables.nix)
-					numba
-					plotly
+              # Async
+              gevent
 
-          jsonschema
-          (localPyPkg ./python-packages/narwhals.nix)
+              # Graph
+              matplotlib
 
-          sphinx
-          numpydoc
-          pydata-sphinx-theme
-          sphinx-copybutton
-          sphinx-design
-          # (localPyPkg ./python-packages/sphinx-favicon.nix)
-          # (localPyPkg ./python-packages/sphinx-reredirects.nix)
-          # (localPyPkg ./python-packages/sphinx-toolbox.nix)
-          (localPyPkg ./python-packages/autodocsumm.nix)
-          (localPyPkg ./python-packages/sphinx-autosummary-accessors.nix)
-          livereload
-        ]));
+              # Testing
+              hypothesis
+
+              # === TOOLING ===
+              pytest                                             # ==8.3.2
+              (localPyPkg ./python-packages/pytest-codspeed.nix) # ==3.0.0
+              pytest-cov                                         # ==6.0.0
+              pytest-xdist                                       # ==3.6.1
+
+              moto # [s3]==5.0.9
+              flask
+              flask-cors
+
+              # Stub files
+              pandas-stubs
+              boto3-stubs
+              (localPyPkg ./python-packages/google-auth-stubs.nix)
+            ];
+            ci = [
+              # --extra-index-url https://download.pytorch.org/whl/cpu
+              torch
+              jax # [cpu]
+              (pkgs-unstable.python311Packages.pyiceberg) # >=0.5.0
+            ];
+            lint = [
+              mypy  # [faster-cache]==1.13.0
+              (localPyPkg ./python-packages/ruff)  # ==0.8.1
+              pkgs.typos # ==1.27.2
+            ];
+            docs = [
+              hypothesis
+              numpy
+              pandas
+              pyarrow
+
+              sphinx                       #==8.1.3
+
+              # Third-party Sphinx extensions
+              (localPyPkg ./python-packages/autodocsumm.nix)                  #==0.2.14
+              numpydoc                                                        #==1.8.0
+              pydata-sphinx-theme                                             #==0.16.0
+              (localPyPkg ./python-packages/sphinx-autosummary-accessors.nix) #==2023.4.0
+              sphinx-copybutton                                               #==0.5.2
+              sphinx-design                                                   #==0.6.1
+              (localPyPkg ./python-packages/sphinx-favicon.nix)               #==1.0.1
+              (localPyPkg ./python-packages/sphinx-reredirects.nix)           #==0.1.5
+              # Sphinx toolbox is a bitch
+              # (localPyPkg ./python-packages/sphinx-toolbox.nix)               #==3.8.1
+
+              livereload                                                      #==2.7.0
+            ];
+          };
+        in with python-pkgs; 
+          (requirements.dev ++
+          requirements.ci   ++
+          requirements.lint ++
+          requirements.docs ++
+
+          [
+            importlib-resources
+            psutil
+            hvplot
+            seaborn
+
+            duckdb
+            pandas
+            jupyterlab
+
+            pygithub
+     #    [
+     #      pydantic
+     #      hypothesis
+     #      pytest
+     #      (localPyPkg ./python-packages/pytest-codspeed.nix)
+     #      pytest-cov
+     #      pytest-xdist
+					#
+     #      moto
+     #      flask
+     #      flask-cors
+     #      boto3
+					#
+     #      numpy
+     #      pandas
+					# # pkgs-unstable.python311Packages.pyarrow
+     #      pyarrow
+					#
+     #      backports-zoneinfo
+     #      tzdata
+					#
+     #      cloudpickle
+     #      fsspec
+     #      s3fs
+     #      
+     #      lxml
+     #      openpyxl
+     #      pyxlsb
+     #      xlsx2csv
+     #      XlsxWriter
+     #      (localPyPkg ./python-packages/deltalake/default.nix)
+					#
+     #      zstandard
+     #      (localPyPkg ./python-packages/altair.nix)
+     #      matplotlib
+     #      gevent
+     #      nest-asyncio
+					#
+     #      pandas-stubs
+     #      boto3-stubs
+					#
+     #      mkdocs-material
+     #      mkdocs-material-extensions
+     #      mkdocs-redirects
+     #      mkdocs-macros
+     #      (localPyPkg ./python-packages/markdown-exec.nix)
+     #      (localPyPkg ./python-packages/material-plausible.nix)
+     #      (localPyPkg ./python-packages/great-tables.nix)
+					# numba
+					# plotly
+					#
+     #      jsonschema
+     #      (localPyPkg ./python-packages/narwhals.nix)
+					#
+     #      memory-profiler
+					#
+     #      sphinx
+     #      numpydoc
+     #      pydata-sphinx-theme
+     #      sphinx-copybutton
+     #      sphinx-design
+     #      # (localPyPkg ./python-packages/sphinx-favicon.nix)
+     #      # (localPyPkg ./python-packages/sphinx-reredirects.nix)
+     #      # (localPyPkg ./python-packages/sphinx-toolbox.nix)
+     #      (localPyPkg ./python-packages/autodocsumm.nix)
+     #      (localPyPkg ./python-packages/sphinx-autosummary-accessors.nix)
+     #      livereload
+        ])));
       in {
         devShells.default = let
           aliasToScript = alias: let
@@ -307,6 +422,12 @@
               '';
               doc = "Setup the environment for profiling";
             };
+            debug-setup = {
+              cmd = ''
+                echo '0' | sudo tee /proc/sys/kernel/yama/ptrace_scope
+              '';
+              doc = "Setup the environment for attach debugging";
+            };
           };
 
           mapAttrsToList = lib.attrsets.mapAttrsToList;
@@ -317,7 +438,7 @@
 
             maturin
             rustToolchain
-            pkgs-unstable.ruff
+            
             typos
             mypy
             dprint
@@ -328,9 +449,11 @@
 
             samply
             hyperfine
+
+            openssl
+            pkg-config
             
             python
-            fix-python.packages.${system}.default
           ] ++ (
             mapAttrsToList (name: value: pkgs.writeShellScriptBin "pl-${name}" (aliasToScript value)) aliases
           );
@@ -352,7 +475,8 @@
             export RUST_SRC_BIN="${rustToolchain}/lib/rustlib/src/rust/library";
             export POLARS_ROOT="${polarsRoot}"
             export PYTHONPATH="$PYTHONPATH:$POLARS_ROOT/py-polars"
-            export CARGO_BUILD_JOBS=12
+            export CARGO_BUILD_JOBS=8
+						export PATH="${python}/bin:$PATH"
 
             echo
             echo 'Defined Aliases:'
@@ -360,13 +484,6 @@
               echo ' - pl-${name}:${nSpaces (maxLength - (builtins.stringLength name))} ${value.doc}'
             '') aliases)}
           '';
-        };
-        devShells.polars-py = pkgs.mkShell {
-          nativeBuildInputs = with pkgs; [
-            (python3.withPackages (python-pkgs: with python-pkgs; [
-              polars
-            ]))
-          ];
         };
       }
     );

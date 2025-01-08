@@ -1,22 +1,7 @@
-{ buildPythonPackage, pkgs, python-pkgs, ... }:
+{ buildPythonPackage, pkgs, python-pkgs, ... } @ params:
 let
   fetchFromGitHub = pkgs.fetchFromGitHub;
-  whey = buildPythonPackage rec {
-    pname = "whey";
-    version = "0.1.1";
-    pyproject = true;
-
-    src = fetchFromGitHub {
-      owner = "repo-helper";
-      repo = "whey";
-      rev = "v${version}";
-      hash = "sha256-s2jZmuFj0gTWVTcXWcBhcu5RBuaf/qMS/xzIpIoG1ZE=";
-    };
-
-    dependencies = with python-pkgs; [ setuptools ];
-
-    pythonImportsCheck = [ "whey" ];
-  };
+	dict2css = import ./dict2css.nix params;
 in
 buildPythonPackage rec {
   pname = "sphinx-toolbox";
@@ -34,6 +19,19 @@ buildPythonPackage rec {
 		sphinx
     whey
     setuptools
+    dict2css
+		(import ./autodocsumm.nix params)
+    (import ./apeye.nix params)
+    beautifulsoup4
+    cachecontrol
+    sphinx-tabs
+    sphinx-prompt
+    sphinx-autodoc-typehints
+		(import ./sphinx-jinja2-compat.nix params)
+    filelock
+    html5lib
+    ruamel-yaml
+    tabulate
   ];
 
   pythonImportsCheck = [ "sphinx_toolbox" ];

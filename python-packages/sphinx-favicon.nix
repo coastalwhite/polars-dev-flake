@@ -11,7 +11,7 @@ buildPythonPackage rec {
     owner = "tcmetzger";
     repo = "sphinx-favicon";
     rev = "v${version}";
-    hash = "";
+    hash = "sha256-Arcjj+6WWuSfufh8oqrDyAtjp07j1JEuw2YlmFcfL3U=";
   };
 
   dependencies = with python-pkgs; [

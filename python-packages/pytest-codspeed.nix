@@ -11,6 +11,7 @@ buildPythonPackage rec {
 		cffi
 		filelock
 		hatchling
+    setuptools
 	];
 
 	src = pkgs.fetchFromGitHub {
