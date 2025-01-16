@@ -167,6 +167,9 @@
             jupyterlab
 
             pygithub
+
+            # Used for polars-benchmark
+            pydantic-settings
      #    [
      #      pydantic
      #      hypothesis
