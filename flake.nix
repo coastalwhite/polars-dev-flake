@@ -34,7 +34,7 @@
 
         polarsRoot = "$HOME/Projects/polars";
         rustToolchain = (pkgs.rust-bin.fromRustupToolchainFile "${polars}/rust-toolchain.toml").override {
-          extensions = [ "rust-analyzer" "rust-src" "miri" ];
+          extensions = [ "rust-analyzer" "rust-src" "llvm-tools" "miri" ];
         };
 
         python = (pkgs.python311.withPackages ( python-pkgs: let
@@ -170,6 +170,9 @@
 
             # Used for polars-benchmark
             pydantic-settings
+
+						# # Used for Altair SVG / PNG conversions
+						# (localPyPkg ./python-packages/vl-convert-python)
      #    [
      #      pydantic
      #      hypothesis
@@ -239,6 +242,20 @@
      #      livereload
         ])));
       in {
+        packages.addr2line = pkgs.rustPlatform.buildRustPackage rec {
+          pname = "addr2line";
+          version = "0.24.2";
+          cargoHash = "sha256-yEqKb4yrJwzjkrHsxlcD0mS5tcdcyQGEA8Y0/GfjV0w=";
+					cargoBuildFlags = "--bin addr2line --features=bin";
+
+          src = pkgs.fetchFromGitHub {
+            owner = "gimli-rs";
+            repo = pname;
+            rev = version;
+            hash = "sha256-l3WZkXnb2zG8FetVBRhYnpMMTONfZvUstbSwdz2V3KA=";
+          };
+        };
+
         devShells.default = let
           aliasToScript = alias: let
             pwd = if alias ? pwd then "${polarsRoot}/${alias.pwd}" else polarsRoot;
@@ -450,6 +467,7 @@
 
             cargo-nextest
 
+            linuxPackages_latest.perf
             samply
             hyperfine
 
@@ -457,6 +475,7 @@
             pkg-config
             
             python
+            self.packages.${system}.addr2line
           ] ++ (
             mapAttrsToList (name: value: pkgs.writeShellScriptBin "pl-${name}" (aliasToScript value)) aliases
           );
@@ -479,7 +498,7 @@
             export POLARS_ROOT="${polarsRoot}"
             export PYTHONPATH="$PYTHONPATH:$POLARS_ROOT/py-polars"
             export CARGO_BUILD_JOBS=8
-						export PATH="${python}/bin:$PATH"
+						export PATH="${self.packages.${system}.addr2line}/bin:${python}/bin:$PATH"
 
             echo
             echo 'Defined Aliases:'

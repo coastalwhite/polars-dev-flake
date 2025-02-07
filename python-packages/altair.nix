@@ -1,16 +1,16 @@
-{ buildpythonpackage, fetchpypi, ... }:
-buildpythonpackage rec {
+{ buildPythonPackage, fetchPypi, ... }:
+buildPythonPackage rec {
 	pname = "altair";
 	version = "5.4.1";
 	format = "wheel";
 
-	docheck = false;
-	src = fetchpypi {
+	doCheck = false;
+	src = fetchPypi {
 		inherit pname version format;
 		python = "py3";
     dist = "py3";
 		abi = "none";
 		platform = "any";
-		sha256 = "sha256-d7ewucl6vp0imr+2/ny1gudwn4oezdu9khjdbjvgsu8=";
+		sha256 = "sha256-D7EwuCl6Vp0ImR+2/nY1gudWn4oEZDu9khJDbjvgSu8=";
 	};
 }

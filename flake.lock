@@ -34,11 +34,11 @@
     "polars": {
       "flake": false,
       "locked": {
-        "lastModified": 1734683671,
-        "narHash": "sha256-qmZsGlR8pG3iAbaRXSGcUSnUIow5IG+sTMySWA0YfGk=",
+        "lastModified": 1737034977,
+        "narHash": "sha256-lWEPovDR3VQu9ft20djFZA7bYASY/qI2NAJO3QChG0w=",
         "owner": "pola-rs",
         "repo": "polars",
-        "rev": "ff00869e8b089268143b46eab45874f61ea9c31d",
+        "rev": "ce9ad171f9bd841aa0539dc1e197df8c2aed0293",
         "type": "github"
       },
       "original": {

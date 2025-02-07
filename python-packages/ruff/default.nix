@@ -1,7 +1,7 @@
 { buildPythonPackage, pkgs, ... }:
 buildPythonPackage rec {
   pname = "ruff";
-  version = "0.8.1";
+  version = "0.9.4";
   pyproject = true;
 
   outputs = [
@@ -13,7 +13,7 @@ buildPythonPackage rec {
     owner = "astral-sh";
     repo = pname;
     rev = version;
-    hash = "sha256-N3TplR+vPu2r56VP/vnOfkxN3Lh2o92kE2hFZKLXO04=";
+    hash = "sha256-HUCquxp8U6ZoHNSuUSu56EyiaSRRA8qUMYu6nNibt6w=";
   };
 
   nativeBuildInputs =
@@ -32,7 +32,7 @@ buildPythonPackage rec {
     lockFile = ./Cargo.lock;
     outputHashes = {
       "lsp-types-0.95.1" = "sha256-8Oh299exWXVi6A39pALOISNfp8XBya8z+KT/Z7suRxQ=";
-      "salsa-0.18.0" = "sha256-zUF2ZBorJzgo8O8ZEnFaitAvWXqNwtHSqx4JE8nByIg=";
+      "salsa-0.18.0" = "sha256-esWNyc3TcIhFul4VjtZH991aZp03BUVgvzCFqt6GtUg=";
     };
   };
 
