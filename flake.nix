@@ -115,6 +115,8 @@
               pandas-stubs
               boto3-stubs
               (localPyPkg ./python-packages/google-auth-stubs.nix)
+
+              orjson
             ];
             ci = [
               # --extra-index-url https://download.pytorch.org/whl/cpu
