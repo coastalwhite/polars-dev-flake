@@ -34,11 +34,11 @@
     "polars": {
       "flake": false,
       "locked": {
-        "lastModified": 1737034977,
-        "narHash": "sha256-lWEPovDR3VQu9ft20djFZA7bYASY/qI2NAJO3QChG0w=",
+        "lastModified": 1741521808,
+        "narHash": "sha256-O29WYQy+WyQv/ftnrYlOVoLHM6masc1aaleoXOn/RXU=",
         "owner": "pola-rs",
         "repo": "polars",
-        "rev": "ce9ad171f9bd841aa0539dc1e197df8c2aed0293",
+        "rev": "bcdc7da8599de43ecbcbfd4c04752f26343eda23",
         "type": "github"
       },
       "original": {
@@ -63,11 +63,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1736303309,
-        "narHash": "sha256-IKrk7RL+Q/2NC6+Ql6dwwCNZI6T6JH2grTdJaVWHF0A=",
+        "lastModified": 1741573199,
+        "narHash": "sha256-A2sln1GdCf+uZ8yrERSCZUCqZ3JUlOv1WE2VFqqfaLQ=",
         "owner": "oxalica",
         "repo": "rust-overlay",
-        "rev": "a0b81d4fa349d9af1765b0f0b4a899c13776f706",
+        "rev": "c777dc8a1e35407b0e80ec89817fe69970f4e81a",
         "type": "github"
       },
       "original": {
